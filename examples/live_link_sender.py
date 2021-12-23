@@ -17,7 +17,6 @@ try:
         py_face.set_value(FaceBlendShape.HeadPitch, random.uniform(-1, 1))
         py_face.set_value(FaceBlendShape.HeadRoll,random.uniform(-1, 1))
         py_face.set_value(FaceBlendShape.HeadYaw, random.uniform(-1, 1))
-
         s.sendall(py_face.encode())
         time.sleep(0.1)
 

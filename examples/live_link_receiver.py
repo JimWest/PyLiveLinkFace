@@ -13,7 +13,9 @@ try:
 
         success, live_link_face = PyLiveLinkFace.decode(data)
         if success:
-            print (live_link_face._sub_frame)
+            # get the blendshape value for the HeadPitch and print it
+            pitch = live_link_face.get_blendshape(FaceBlendShape.HeadPitch)
+            print (live_link_face.name, pitch)            
             pass
 
 except KeyboardInterrupt:

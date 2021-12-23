@@ -172,7 +172,7 @@ class PyLiveLinkFace:
         """        
         return self._blend_shapes[index.value]
 
-    def set_value(self, index: FaceBlendShape, value: float, 
+    def set_blendshape(self, index: FaceBlendShape, value: float, 
                         no_lerp: bool = False) -> None:
         """ Sets the value of the blendshape. 
         
