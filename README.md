@@ -45,9 +45,9 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect((UDP_IP, UDP_PORT))
 
 # set the head rotation to random values             
-py_face.set_value(FaceBlendShape.HeadPitch, random.uniform(-1, 1))
-py_face.set_value(FaceBlendShape.HeadRoll,random.uniform(-1, 1))
-py_face.set_value(FaceBlendShape.HeadYaw, random.uniform(-1, 1))
+py_face.set_blendshape(FaceBlendShape.HeadPitch, random.uniform(-1, 1))
+py_face.set_blendshape(FaceBlendShape.HeadRoll,random.uniform(-1, 1))
+py_face.set_blendshape(FaceBlendShape.HeadYaw, random.uniform(-1, 1))
 
 # encode the PyLiveLinkFace data to bytes and send them
 s.sendall(py_face.encode())

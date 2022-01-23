@@ -1,4 +1,6 @@
 from __future__ import annotations
+from collections import deque
+from statistics import mean
 from enum import Enum
 import struct
 from typing import Tuple
@@ -80,13 +82,13 @@ class PyLiveLinkFace:
 
     def __init__(self, name: str = "Python_LiveLinkFace", 
                         uuid: str = str(uuid.uuid1()), fps=60, 
-                        lerp_ratio: float = 0.5) -> None:
+                        filter_size: int = 5) -> None:
 
         # properties
         self.uuid = uuid
         self.name = name
         self.fps = fps
-        self.lerp_ratio = lerp_ratio
+        self._filter_size = filter_size
 
         self._version = 6
         now = datetime.datetime.now()
@@ -96,7 +98,9 @@ class PyLiveLinkFace:
         self._sub_frame = 1056060032                # I don't know how to calculate this
         self._denominator = int(self._fps / 60)     # 1 most of the time
         self._blend_shapes = [0.000] * 61
-        self._old_blend_shapes = [0.000] * 61       # used for lerping
+        self._old_blend_shapes = []                 # used for filtering
+        for i in range(61):
+            self._old_blend_shapes.append(deque([0.0], maxlen = self._filter_size))
 
     @property
     def uuid(self) -> str:
@@ -127,16 +131,6 @@ class PyLiveLinkFace:
         if value < 1:
             raise ValueError("Only fps values greater than 1 are allowed.")
         self._fps = value
-
-    @property
-    def lerp_ratio(self) -> float:
-        return self._lerp_ratio
-
-    @lerp_ratio.setter
-    def lerp_ratio(self, value: float) -> None:
-        if value < 0 or value > 1:
-            raise ValueError("Only values between 0 and 1 are allowed.")
-        self._lerp_ratio = value
 
     def encode(self) -> bytes:
         """ Encodes the PyLiveLinkFace object into a bytes object so it can be 
@@ -173,11 +167,11 @@ class PyLiveLinkFace:
         return self._blend_shapes[index.value]
 
     def set_blendshape(self, index: FaceBlendShape, value: float, 
-                        no_lerp: bool = False) -> None:
+                        no_filter: bool = False) -> None:
         """ Sets the value of the blendshape. 
         
-        The function will use lerp to interpolate between the old and the new 
-        value, unless `no_lerp` is set to True.
+        The function will use mean to filter between the old and the new 
+        values, unless `no_filter` is set to True.
 
         Parameters
         ----------
@@ -187,27 +181,21 @@ class PyLiveLinkFace:
             Value to set the BlendShape to, should be in the range of 0 - 1 for 
             the blendshapes and between -1 and 1 for the head rotation 
             (yaw, pitch, roll).
-        no_lerp: bool
+        no_filter: bool
             If set to True, the blendshape will be set to the value without 
-            interpoleration.
+            filtering.
         
         Returns
         ----------
         None
         """
 
-        lerp_ratio = self._lerp_ratio
-        if no_lerp:
-            lerp_ratio = 1
-        elif abs(self._old_blend_shapes[index.value] - value) > 0.5:
-            # lerp a bit faster if values are big
-            lerp_ratio = np.clip(lerp_ratio + 0.2, 0, 1)
-
-        x = [0, 1]
-        y = [self._old_blend_shapes[index.value], value]
-        lerped_value = np.clip(np.interp(self._lerp_ratio, x, y), -1, 1)
-        self._blend_shapes[index.value] = lerped_value
-        self._old_blend_shapes[index.value] = lerped_value
+        if no_filter:
+            self._blend_shapes[index.value] = value
+        else:
+            self._old_blend_shapes[index.value].append(value)
+            filterd_value = mean(self._old_blend_shapes[index.value])
+            self._blend_shapes[index.value] = filterd_value
 
     @staticmethod
     def decode(bytes_data: bytes) -> Tuple[bool, PyLiveLinkFace]:
@@ -235,7 +223,6 @@ class PyLiveLinkFace:
         name_end_pos = 45 + name_length
         name = bytes_data[45:name_end_pos].decode("utf-8")
         if len(bytes_data) > name_end_pos + 16:
-
 
             #FFrameTime, FFrameRate and data length
             frame_number, sub_frame, fps, denominator, data_length = struct.unpack(
