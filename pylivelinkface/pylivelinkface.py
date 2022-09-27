@@ -167,7 +167,7 @@ class PyLiveLinkFace:
         return self._blend_shapes[index.value]
 
     def set_blendshape(self, index: FaceBlendShape, value: float, 
-                        no_filter: bool = False) -> None:
+                        no_filter: bool = True) -> None:
         """ Sets the value of the blendshape. 
         
         The function will use mean to filter between the old and the new 
